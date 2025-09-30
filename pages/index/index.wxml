@@ -1,0 +1,115 @@
+<view class="container">
+  <!-- 头部区域 -->
+  <view class="header">
+    <view class="title">智能健康分析助手</view>
+    <view class="subtitle">上传体检报告，AI为您专业解读</view>
+  </view>
+
+  <!-- 上传区域 -->
+  <view class="upload-section">
+    <view class="upload-card" bindtap="handleUpload">
+      <view class="upload-icon">📄</view>
+      <view class="upload-text">点击上传体检报告</view>
+      <view class="upload-hint">支持JPG、PNG格式，最多9张图片</view>
+    </view>
+    
+    <!-- 状态提示 -->
+    <view class="status-container" wx:if="{{uploadStatus}}">
+      <view class="status-indicator {{uploadStatus.includes('完成') ? 'success' : uploadStatus.includes('失败') ? 'error' : 'loading'}}"></view>
+      <text class="status-text">{{uploadStatus}}</text>
+    </view>
+  </view>
+
+  <!-- 结果展示区域 -->
+  <view class="result-area" wx:if="{{keyMetrics.length || abnormalItems.length || summary}}">
+    <!-- 分析类型指示器 -->
+    <view class="analysis-type-indicator" wx:if="{{analysisType}}">
+      <view class="indicator-icon">🔍</view>
+      <view class="indicator-text">分析类型：{{analysisType}}</view>
+    </view>
+
+    <!-- 免责声明 -->
+    <view class="disclaimer">
+      <view class="disclaimer-icon">⚠️</view>
+      <view class="disclaimer-text">
+        <text class="disclaimer-title">重要声明</text>
+        <text class="disclaimer-content">本分析结果由AI模型生成，仅供参考，不能作为专业医疗诊断的依据。任何健康问题，请务必咨询执业医师。</text>
+      </view>
+    </view>
+
+    <!-- 关键指标 -->
+    <view class="section" wx:if="{{keyMetrics.length}}">
+      <view class="section-header">
+        <view class="section-icon">📊</view>
+        <view class="section-title">关键指标解读</view>
+      </view>
+      <view class="metrics-grid">
+        <view class="metric-card" wx:for="{{keyMetrics}}" wx:key="name">
+          <view class="metric-name">{{item.name}}</view>
+          <view class="metric-value">{{item.value}} <text class="metric-unit">{{item.unit}}</text></view>
+          <view class="metric-reference" wx:if="{{item.referenceRange}}">参考范围：{{item.referenceRange}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 异常项提醒 -->
+    <view class="section" wx:if="{{abnormalItems.length}}">
+      <view class="section-header">
+        <view class="section-icon">⚠️</view>
+        <view class="section-title">异常项提醒</view>
+      </view>
+      <view class="abnormal-list">
+        <view class="abnormal-card" wx:for="{{abnormalItems}}" wx:key="name">
+          <view class="abnormal-header">
+            <view class="abnormal-name">{{item.name}}</view>
+            <view class="abnormal-status {{item.status.includes('偏高') ? 'high' : item.status.includes('偏低') ? 'low' : 'normal'}}">
+              {{item.status}}
+            </view>
+          </view>
+          <view class="abnormal-details">
+            <view class="abnormal-value">数值：{{item.value}} {{item.unit}}</view>
+            <view class="abnormal-reference" wx:if="{{item.referenceRange}}">参考范围：{{item.referenceRange}}</view>
+            <view class="abnormal-note" wx:if="{{item.note}}">{{item.note}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 综合建议 -->
+    <view class="section" wx:if="{{summary}}">
+      <view class="section-header">
+        <view class="section-icon">💡</view>
+        <view class="section-title">综合建议</view>
+      </view>
+      <view class="summary-card">
+        <view class="summary-text">{{summary}}</view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="retry-button" bindtap="retryAnalysis" wx:if="{{recordId}}">重新分析</button>
+      <button class="regenerate-button" bindtap="regenerateAnalysis" wx:if="{{recordId}}">重新生成</button>
+      <button class="new-analysis-button" bindtap="startNewAnalysis">开始新分析</button>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!keyMetrics.length && !abnormalItems.length && !summary && !uploadStatus}}">
+    <view class="empty-icon">🏥</view>
+    <view class="empty-title">开始您的健康分析</view>
+    <view class="empty-desc">上传体检报告图片，AI将为您提供专业的健康指标解读和个性化建议</view>
+  </view>
+
+  <!-- 分析中状态 -->
+  <view class="analyzing-state" wx:if="{{uploadStatus && uploadStatus.includes('分析') && !keyMetrics.length && !abnormalItems.length && !summary}}">
+    <view class="analyzing-icon">🔍</view>
+    <view class="analyzing-title">AI正在分析中...</view>
+    <view class="analyzing-desc">请稍候，我们正在为您解读报告内容</view>
+    <view class="loading-dots">
+      <view class="dot"></view>
+      <view class="dot"></view>
+      <view class="dot"></view>
+    </view>
+  </view>
+</view>
