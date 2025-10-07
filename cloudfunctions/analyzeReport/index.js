@@ -1,7 +1,10 @@
-// 真实LLM分析云函数
+// 基于样本匹配的健康分析云函数
 const cloud = require("wx-server-sdk");
 const tencentcloud = require("tencentcloud-sdk-nodejs");
-const axios = require("axios");
+
+// 导入新的模块
+const { extractKeyMetrics, generateAbnormalItems, generateSummary } = require('./ocrExtractor');
+const { findNearestNeighbor, generateAnalysisFromNearestNeighbor } = require('./nearestNeighbor');
 
 // 尝试加载本地配置（开发环境）
 let localConfig = {};
@@ -36,20 +39,20 @@ exports.main = async (event, context) => {
     
     console.log("开始处理文件:", fileIDArray);
 
-    // 直接使用配置的API密钥
-    console.log("使用真实LLM分析");
-    return await performRealAnalysis(fileIDArray, OPENID);
+    // 使用基于样本匹配的分析
+    console.log("使用样本匹配分析");
+    return await performSampleBasedAnalysis(fileIDArray, OPENID);
   } catch (error) {
     console.error("云函数执行失败:", error);
-    // 如果真实分析失败，回退到模拟分析
+    // 如果样本匹配分析失败，回退到模拟分析
     console.log("回退到模拟分析");
     const fileIDArray = Array.isArray(fileIDs) ? fileIDs : [fileIDs];
     return await performMockAnalysis(fileIDArray, OPENID);
   }
 };
 
-// 执行真实LLM分析
-async function performRealAnalysis(fileIDs, OPENID) {
+// 执行基于样本匹配的分析
+async function performSampleBasedAnalysis(fileIDs, OPENID) {
   try {
     // 下载所有文件
     const downloadPromises = fileIDs.map(fileID => 
@@ -104,78 +107,41 @@ async function performRealAnalysis(fileIDs, OPENID) {
     const reportText = allTexts.join("\n\n--- 图片分割线 ---\n\n").trim();
     console.log("合并后的OCR识别结果:\n", reportText);
 
-    // 调用LLM进行分析
-    const analysisResult = await callLLMAnalysis(reportText);
+    // 从OCR文本中提取关键指标
+    const extractedMetrics = extractKeyMetrics(reportText);
+    console.log("提取的关键指标:", extractedMetrics);
+
+    if (extractedMetrics.length === 0) {
+      throw new Error("未能从报告中提取到有效的关键指标");
+    }
+
+    // 使用最近邻算法找到最相似的样本
+    const nearestMatch = findNearestNeighbor(extractedMetrics);
+    console.log("找到最相似样本:", nearestMatch.sample.id, "相似度:", nearestMatch.similarity);
+
+    // 基于匹配结果生成分析
+    const analysisResult = generateAnalysisFromNearestNeighbor(extractedMetrics, nearestMatch);
 
     // 生成记录ID
-    const recordId = "real_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    const recordId = "sample_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
 
-    console.log("真实LLM分析完成，recordId:", recordId);
+    console.log("样本匹配分析完成，recordId:", recordId);
 
     return {
       success: true,
-      message: "真实LLM分析完成",
+      message: "样本匹配分析完成",
       data: analysisResult,
       recordId: recordId,
-      analysisType: "真实AI分析"
+      analysisType: analysisResult.analysisType,
+      matchedSample: analysisResult.matchedSample
     };
   } catch (error) {
-    console.error("真实分析失败:", error);
+    console.error("样本匹配分析失败:", error);
     throw error;
   }
 }
 
-// 调用LLM进行分析
-async function callLLMAnalysis(reportText) {
-  const analysisPrompt = [
-    "你是一名专业的健康数据分析助手。",
-    "请根据以下体检报告内容执行任务：",
-    "1. 识别关键指标：列出报告中出现的医学指标、对应数值和单位。",
-    "2. 判断异常项：结合参考范围（如缺失可依据常见临床范围合理推断并注明）标记偏高或偏低。",
-    "3. 总结与建议：针对异常指标给出通用、非治疗性的生活方式与饮食建议。",
-    "4. 输出格式：以 JSON 字符串返回，字段包括 keyMetrics（数组，每项含 name、value、unit、referenceRange）、abnormalItems（数组，每项含 name、value、unit、status、referenceRange、note）、summary（字符串）。",
-    "请严格返回合法 JSON，不要包含额外说明或多余文本。"
-  ].join("\n");
-
-  const fullPrompt = `作为一名专业的健康数据分析助手，请分析以下体检报告文本。\n任务要求：\n1. 识别关键指标：提取报告中的医学指标及其数值和单位。\n2. 判断异常项：标记偏高或偏低的指标，并说明依据。\n3. 总结与建议：提供通用、非治疗性的生活方式和饮食建议。\n4. 输出格式：返回合法 JSON，包含 keyMetrics、abnormalItems、summary。\n\n报告文本如下：\n---\n${reportText}\n---`;
-
-  const requestData = {
-    contents: [
-      {
-        parts: [
-          { text: `${analysisPrompt}\n\n${fullPrompt}` }
-        ]
-      }
-    ]
-  };
-
-  const GEMINI_API_KEY = localConfig.GEMINI_API_KEY || process.env.GEMINI_API_KEY || "your_gemini_api_key_here";
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-
-  const llmResponse = await axios.post(API_URL, requestData, {
-    headers: {
-      "Content-Type": "application/json"
-    }
-  });
-
-  const rawAnalysis = llmResponse?.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  console.log("LLM 分析结果:\n", rawAnalysis);
-
-  let analysisData = null;
-  try {
-    analysisData = rawAnalysis ? JSON.parse(rawAnalysis) : null;
-  } catch (parseError) {
-    console.warn("AI 返回结果非 JSON，使用原始文本保存", parseError);
-    analysisData = { 
-      rawText: rawAnalysis,
-      keyMetrics: [],
-      abnormalItems: [],
-      summary: rawAnalysis || "LLM分析完成，但返回格式异常"
-    };
-  }
-
-  return analysisData;
-}
+// LLM相关代码已移除，现在使用样本匹配分析
 
 // 执行模拟分析（回退方案）
 async function performMockAnalysis(fileIDs, OPENID) {

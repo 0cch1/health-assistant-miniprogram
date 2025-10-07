@@ -2,13 +2,7 @@
 
 ## 🔑 获取API密钥
 
-### 1. Google Gemini API
-1. 访问：https://makersuite.google.com/app/apikey
-2. 登录Google账号
-3. 点击"Create API Key"
-4. 复制生成的API密钥
-
-### 2. 腾讯云OCR API
+### 腾讯云OCR API
 1. 访问：https://console.cloud.tencent.com/cam/capi
 2. 登录腾讯云控制台
 3. 点击"新建密钥"
@@ -23,7 +17,6 @@
 4. 找到"analyzeReport"函数
 5. 点击"环境变量"标签
 6. 添加以下环境变量：
-   - `GEMINI_API_KEY`: 你的Gemini API密钥
    - `TENCENT_SECRET_ID`: 你的腾讯云SecretId
    - `TENCENT_SECRET_KEY`: 你的腾讯云SecretKey
 
@@ -33,9 +26,10 @@
 1. 打开 `cloudfunctions/analyzeReport/index.js`
 2. 找到以下行：
    ```javascript
-   const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "your_api_key_here";
+   secretId: localConfig.TENCENT_SECRET_ID || process.env.TENCENT_SECRET_ID || "your_tencent_secret_id_here",
+   secretKey: localConfig.TENCENT_SECRET_KEY || process.env.TENCENT_SECRET_KEY || "your_tencent_secret_key_here"
    ```
-3. 替换 `"your_api_key_here"` 为你的实际API密钥
+3. 替换占位符为你的实际API密钥
 
 ## 🧪 测试配置
 
@@ -44,7 +38,7 @@
 1. 上传一张体检报告图片
 2. 查看控制台日志
 3. 检查是否出现OCR识别结果
-4. 查看AI分析是否正常返回
+4. 查看样本匹配分析是否正常返回
 
 ## ⚠️ 安全提醒
 
