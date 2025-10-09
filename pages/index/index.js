@@ -129,6 +129,11 @@ Page({
     tcmDimensions: TCM_DIMENSIONS
   },
 
+  onLoad() {
+    // 初始化勾选状态
+    this.updateCheckedStates();
+  },
+
   handleUpload() {
     wx.chooseMedia({
       count: 6,
@@ -199,6 +204,32 @@ Page({
       ? current.filter(item => item !== value)
       : current.concat(value);
     this.setData({ [`form.${section}`]: updated });
+    
+    // 更新勾选状态显示
+    this.updateCheckedStates();
+  },
+
+  updateCheckedStates() {
+    // 更新病史勾选状态
+    const historyChecked = {};
+    if (this.data.historyOptions && this.data.form.history) {
+      this.data.historyOptions.forEach(option => {
+        historyChecked[option.value] = this.data.form.history.indexOf(option.value) !== -1;
+      });
+    }
+    
+    // 更新症状勾选状态
+    const symptomsChecked = {};
+    if (this.data.symptomOptions && this.data.form.symptoms) {
+      this.data.symptomOptions.forEach(option => {
+        symptomsChecked[option.value] = this.data.form.symptoms.indexOf(option.value) !== -1;
+      });
+    }
+    
+    this.setData({
+      'form.historyChecked': historyChecked,
+      'form.symptomsChecked': symptomsChecked
+    });
   },
 
   async submitAnalysis() {
@@ -309,6 +340,8 @@ Page({
       similarityText: '',
       ocrNotes: []
     });
+    // 重新初始化勾选状态
+    this.updateCheckedStates();
   }
 });
 
