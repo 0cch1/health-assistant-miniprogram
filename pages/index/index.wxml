@@ -1,115 +1,273 @@
-<view class="container">
-  <!-- 头部区域 -->
+<scroll-view class="page" scroll-y="true">
   <view class="header">
-    <view class="title">智能健康分析助手</view>
-    <view class="subtitle">上传体检报告，AI为您专业解读</view>
+    <view class="title">中药智能分析与推荐</view>
+    <view class="subtitle">依据《开发监督规范》，整合体检数据与问卷信息生成个性化方案</view>
   </view>
 
-  <!-- 上传区域 -->
-  <view class="upload-section">
-    <view class="upload-card" bindtap="handleUpload">
-      <view class="upload-icon">📄</view>
-      <view class="upload-text">点击上传体检报告</view>
-      <view class="upload-hint">支持JPG、PNG格式，最多9张图片</view>
+  <view class="card">
+    <view class="card-title">体检报告上传（可选）</view>
+    <view class="upload-area" bindtap="handleUpload">
+      <text>+ 选择体检报告图片</text>
+      <view class="hint">支持 JPG / PNG，单次最多 6 张</view>
     </view>
-    
-    <!-- 状态提示 -->
-    <view class="status-container" wx:if="{{uploadStatus}}">
-      <view class="status-indicator {{uploadStatus.includes('完成') ? 'success' : uploadStatus.includes('失败') ? 'error' : 'loading'}}"></view>
-      <text class="status-text">{{uploadStatus}}</text>
+    <view class="upload-status" wx:if="{{uploadStatus}}">{{uploadStatus}}</view>
+    <view class="upload-list" wx:if="{{uploadFiles && uploadFiles.length}}">
+      <view class="upload-item" wx:for="{{uploadFiles || []}}" wx:key="uploadTime">
+        <image class="upload-thumb" src="{{item.tempFilePath}}" mode="aspectFill" />
+        <view class="upload-remove" data-index="{{index}}" bindtap="removeUploaded">×</view>
+      </view>
     </view>
   </view>
 
-  <!-- 结果展示区域 -->
-  <view class="result-area" wx:if="{{keyMetrics.length || abnormalItems.length || summary}}">
-    <!-- 分析类型指示器 -->
-    <view class="analysis-type-indicator" wx:if="{{analysisType}}">
-      <view class="indicator-icon">🔍</view>
-      <view class="indicator-text">分析类型：{{analysisType}}</view>
-    </view>
-
-    <!-- 免责声明 -->
-    <view class="disclaimer">
-      <view class="disclaimer-icon">⚠️</view>
-      <view class="disclaimer-text">
-        <text class="disclaimer-title">重要声明</text>
-        <text class="disclaimer-content">本分析结果由AI模型生成，仅供参考，不能作为专业医疗诊断的依据。任何健康问题，请务必咨询执业医师。</text>
+  <view class="card">
+    <view class="card-title">基础信息</view>
+    <view class="section">
+      <view class="field">
+        <view class="label">性别</view>
+        <radio-group class="radio-group" data-section="demographics" data-key="gender" bindchange="onRadioChange">
+          <label class="radio-item">
+            <radio value="male" checked="{{form.demographics.gender === 'male'}}" /> 男
+          </label>
+          <label class="radio-item">
+            <radio value="female" checked="{{form.demographics.gender === 'female'}}" /> 女
+          </label>
+        </radio-group>
+      </view>
+      <view class="field-grid">
+        <view class="field">
+          <view class="label">年龄</view>
+          <input type="number" placeholder="岁" value="{{form.demographics.age}}" data-path="form.demographics.age" bindinput="onInputChange" />
+        </view>
+        <view class="field">
+          <view class="label">身高</view>
+          <input type="number" placeholder="cm" value="{{form.demographics.height}}" data-path="form.demographics.height" bindinput="onInputChange" />
+        </view>
+        <view class="field">
+          <view class="label">体重</view>
+          <input type="number" placeholder="kg" value="{{form.demographics.weight}}" data-path="form.demographics.weight" bindinput="onInputChange" />
+        </view>
       </view>
     </view>
+  </view>
 
-    <!-- 关键指标 -->
-    <view class="section" wx:if="{{keyMetrics.length}}">
-      <view class="section-header">
-        <view class="section-icon">📊</view>
-        <view class="section-title">关键指标解读</view>
+  <view class="card">
+    <view class="card-title">关键检验指标（可手动填写或等待 OCR 提取）</view>
+    <view class="labs-grid">
+      <view class="field">
+        <view class="label">收缩压</view>
+        <input type="number" placeholder="mmHg" value="{{form.labs.systolic}}" data-path="form.labs.systolic" bindinput="onInputChange" />
       </view>
-      <view class="metrics-grid">
-        <view class="metric-card" wx:for="{{keyMetrics}}" wx:key="name">
-          <view class="metric-name">{{item.name}}</view>
-          <view class="metric-value">{{item.value}} <text class="metric-unit">{{item.unit}}</text></view>
-          <view class="metric-reference" wx:if="{{item.referenceRange}}">参考范围：{{item.referenceRange}}</view>
+      <view class="field">
+        <view class="label">舒张压</view>
+        <input type="number" placeholder="mmHg" value="{{form.labs.diastolic}}" data-path="form.labs.diastolic" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">空腹血糖</view>
+        <input type="digit" placeholder="mmol/L" value="{{form.labs.fasting_glucose}}" data-path="form.labs.fasting_glucose" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">糖化血红蛋白</view>
+        <input type="digit" placeholder="%" value="{{form.labs.hba1c}}" data-path="form.labs.hba1c" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">总胆固醇</view>
+        <input type="digit" placeholder="mmol/L" value="{{form.labs.total_cholesterol}}" data-path="form.labs.total_cholesterol" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">HDL</view>
+        <input type="digit" placeholder="mmol/L" value="{{form.labs.hdl}}" data-path="form.labs.hdl" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">LDL</view>
+        <input type="digit" placeholder="mmol/L" value="{{form.labs.ldl}}" data-path="form.labs.ldl" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">甘油三酯</view>
+        <input type="digit" placeholder="mmol/L" value="{{form.labs.triglycerides}}" data-path="form.labs.triglycerides" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">尿酸</view>
+        <input type="number" placeholder="μmol/L" value="{{form.labs.uric_acid}}" data-path="form.labs.uric_acid" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">ALT</view>
+        <input type="number" placeholder="U/L" value="{{form.labs.alt}}" data-path="form.labs.alt" bindinput="onInputChange" />
+      </view>
+      <view class="field">
+        <view class="label">eGFR</view>
+        <input type="number" placeholder="ml/min" value="{{form.labs.egfr}}" data-path="form.labs.egfr" bindinput="onInputChange" />
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">病史与生活方式</view>
+    <view class="section">
+      <view class="label">既往或特殊情况</view>
+      <view class="option-group">
+        <view
+          class="option-chip {{form.historyChecked && form.historyChecked[item.value] ? 'checked' : ''}}"
+          wx:for="{{historyOptions || []}}"
+          wx:key="value"
+          data-section="history"
+          data-value="{{item.value}}"
+          bindtap="toggleOption"
+        >
+          <text class="option-icon" wx:if="{{form.historyChecked && form.historyChecked[item.value]}}">✔</text>
+          <text class="option-label">{{item.label}}</text>
         </view>
       </view>
     </view>
 
-    <!-- 异常项提醒 -->
-    <view class="section" wx:if="{{abnormalItems.length}}">
-      <view class="section-header">
-        <view class="section-icon">⚠️</view>
-        <view class="section-title">异常项提醒</view>
+    <view class="section lifestyle">
+      <view class="label">生活方式</view>
+      <view class="lifestyle-group" wx:for="{{lifestyleGroups || []}}" wx:key="key">
+        <view class="lifestyle-title">{{item.title}}</view>
+        <radio-group data-section="lifestyle" data-key="{{item.key}}" bindchange="onRadioChange">
+          <label class="radio-item" wx:for="{{item.options || []}}" wx:for-item="option" wx:key="value">
+            <radio value="{{option.value}}" checked="{{form.lifestyle[item.key] === option.value}}" /> {{option.label}}
+          </label>
+        </radio-group>
       </view>
-      <view class="abnormal-list">
-        <view class="abnormal-card" wx:for="{{abnormalItems}}" wx:key="name">
-          <view class="abnormal-header">
-            <view class="abnormal-name">{{item.name}}</view>
-            <view class="abnormal-status {{item.status.includes('偏高') ? 'high' : item.status.includes('偏低') ? 'low' : 'normal'}}">
-              {{item.status}}
-            </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">主要症状</view>
+    <view class="option-group">
+      <view
+        class="option-chip {{form.symptomsChecked && form.symptomsChecked[item.value] ? 'checked' : ''}}"
+        wx:for="{{symptomOptions || []}}"
+        wx:key="value"
+        data-section="symptoms"
+        data-value="{{item.value}}"
+        bindtap="toggleOption"
+      >
+        <text class="option-icon" wx:if="{{form.symptomsChecked && form.symptomsChecked[item.value]}}">✔</text>
+        <text class="option-label">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">中医体质问卷（0 = 不符合，4 = 非常符合）</view>
+    <view class="tcm-grid">
+      <view class="tcm-item" wx:for="{{tcmDimensions || []}}" wx:key="key">
+        <view class="tcm-header">
+          <view class="tcm-label">{{item.label}}</view>
+          <view class="tcm-value">{{form.tcmQuiz[item.key]}}</view>
+        </view>
+        <view class="tcm-desc">{{item.description}}</view>
+        <slider min="0" max="4" step="1" show-value="false" value="{{form.tcmQuiz[item.key]}}" data-key="{{item.key}}" bindchange="onTcmSliderChange" />
+      </view>
+    </view>
+  </view>
+
+  <view class="card actions">
+    <button class="primary" bindtap="submitAnalysis" loading="{{isSubmitting}}" disabled="{{isSubmitting}}">提交分析</button>
+    <button class="secondary" bindtap="resetForm" disabled="{{isSubmitting}}">重置表单</button>
+  </view>
+  <view class="analysis-wrapper" wx:if="{{analysisResult}}">
+    <view class="analysis-banner">
+      <view class="banner-top">
+        <view class="banner-title">AI 体质分析完成</view>
+        <view class="banner-score">{{similarityText}}</view>
+      </view>
+      <view class="banner-tags">
+        <view class="banner-chip">{{analysisResult.tcmPattern || '待确认'}}</view>
+        <view class="banner-chip">{{analysisResult.constitution || '待确认'}}</view>
+        <view class="banner-chip severity-{{analysisResult.severityClass || 'neutral'}}">{{analysisResult.severity || '需评估'}}</view>
+      </view>
+      <view class="banner-desc">{{analysisResult.summary || '系统已根据您的体检资料生成调理建议，请结合专业医师意见使用。'}}</view>
+    </view>
+
+    <view class="pretty-section" wx:if="{{analysisResult.herbalPlan}}">
+      <view class="section-header">
+        <view class="section-icon">🌿</view>
+        <view class="section-title">个性化调理方案</view>
+      </view>
+      <view class="section-card">
+        <view class="plan-title">{{analysisResult.herbalPlan.name}}</view>
+        <view class="plan-subtitle" wx:if="{{analysisResult.herbalPlan.category}}">{{analysisResult.herbalPlan.category}}</view>
+
+        <view class="pill-grid" wx:if="{{analysisResult.herbalPlan.herbs.length}}">
+          <view class="pill" wx:for="{{analysisResult.herbalPlan.herbs}}" wx:key="name">
+            <view class="pill-name">{{item.name}}</view>
+            <view class="pill-dose">{{item.amount}}{{item.unit}}</view>
           </view>
-          <view class="abnormal-details">
-            <view class="abnormal-value">数值：{{item.value}} {{item.unit}}</view>
-            <view class="abnormal-reference" wx:if="{{item.referenceRange}}">参考范围：{{item.referenceRange}}</view>
-            <view class="abnormal-note" wx:if="{{item.note}}">{{item.note}}</view>
+        </view>
+
+        <view class="info-list">
+          <view class="info-row" wx:if="{{analysisResult.herbalPlan.dosage}}">
+            <view class="info-label">建议服法</view>
+            <view class="info-value">{{analysisResult.herbalPlan.dosage}}</view>
+          </view>
+          <view class="info-row" wx:if="{{analysisResult.herbalPlan.duration}}">
+            <view class="info-label">建议周期</view>
+            <view class="info-value">{{analysisResult.herbalPlan.duration}}</view>
+          </view>
+        </view>
+
+        <view class="bullet-section" wx:if="{{analysisResult.herbalPlan.adjustments.length}}">
+          <view class="bullet-title">调理贴士</view>
+          <view class="bullet-list">
+            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.adjustments}}" wx:key="*this">{{item}}</view>
+          </view>
+        </view>
+
+        <view class="bullet-section" wx:if="{{analysisResult.herbalPlan.precautions.length}}">
+          <view class="bullet-title">注意事项</view>
+          <view class="bullet-list">
+            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.precautions}}" wx:key="*this">{{item}}</view>
+          </view>
+        </view>
+
+        <view class="bullet-section danger" wx:if="{{analysisResult.herbalPlan.contraindications.length}}">
+          <view class="bullet-title">禁忌提醒</view>
+          <view class="bullet-list">
+            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.contraindications}}" wx:key="*this">{{item}}</view>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 综合建议 -->
-    <view class="section" wx:if="{{summary}}">
+    <view class="pretty-section" wx:if="{{analysisResult.lifestyleAdvice.length}}">
       <view class="section-header">
         <view class="section-icon">💡</view>
-        <view class="section-title">综合建议</view>
+        <view class="section-title">生活方式建议</view>
       </view>
-      <view class="summary-card">
-        <view class="summary-text">{{summary}}</view>
+      <view class="section-card">
+        <view class="advice-list">
+          <view class="advice-chip" wx:for="{{analysisResult.lifestyleAdvice}}" wx:key="*this">{{item}}</view>
+        </view>
       </view>
     </view>
 
-    <!-- 操作按钮 -->
-    <view class="action-buttons">
-      <button class="retry-button" bindtap="retryAnalysis" wx:if="{{recordId}}">重新分析</button>
-      <button class="regenerate-button" bindtap="regenerateAnalysis" wx:if="{{recordId}}">重新生成</button>
-      <button class="new-analysis-button" bindtap="startNewAnalysis">开始新分析</button>
+    <view class="pretty-section" wx:if="{{analysisResult.safety}}">
+      <view class="section-header">
+        <view class="section-icon">🛡️</view>
+        <view class="section-title">安全提示</view>
+      </view>
+      <view class="section-card">
+        <view class="safety-banner safety-{{analysisResult.safety.riskLevelClass || 'neutral'}}">
+          <view class="safety-level">{{analysisResult.safety.riskLevel || '请遵医嘱'}}</view>
+          <view class="safety-desc">{{analysisResult.safety.isSafe ? '总体风险较低，请在医师指导下持续观察。' : '发现潜在风险，请先咨询执业中医师后再决定是否使用本方案。'}}</view>
+        </view>
+
+        <view class="bullet-section danger" wx:if="{{analysisResult.safety.alerts.length}}">
+          <view class="bullet-title">重点关注</view>
+          <view class="bullet-list">
+            <view class="bullet-item" wx:for="{{analysisResult.safety.alerts}}" wx:key="*this">{{item}}</view>
+          </view>
+        </view>
+
+        <view class="bullet-section notice" wx:if="{{analysisResult.safety.disclaimers.length}}">
+          <view class="bullet-title">温馨提示</view>
+          <view class="bullet-list">
+            <view class="bullet-item" wx:for="{{analysisResult.safety.disclaimers}}" wx:key="*this">{{item}}</view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
-
-  <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{!keyMetrics.length && !abnormalItems.length && !summary && !uploadStatus}}">
-    <view class="empty-icon">🏥</view>
-    <view class="empty-title">开始您的健康分析</view>
-    <view class="empty-desc">上传体检报告图片，AI将为您提供专业的健康指标解读和个性化建议</view>
-  </view>
-
-  <!-- 分析中状态 -->
-  <view class="analyzing-state" wx:if="{{uploadStatus && uploadStatus.includes('分析') && !keyMetrics.length && !abnormalItems.length && !summary}}">
-    <view class="analyzing-icon">🔍</view>
-    <view class="analyzing-title">AI正在分析中...</view>
-    <view class="analyzing-desc">请稍候，我们正在为您解读报告内容</view>
-    <view class="loading-dots">
-      <view class="dot"></view>
-      <view class="dot"></view>
-      <view class="dot"></view>
-    </view>
-  </view>
-</view>
+</scroll-view>
