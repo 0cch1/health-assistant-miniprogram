@@ -50,55 +50,6 @@
     </view>
   </view>
 
-  <view class="card">
-    <view class="card-title">关键检验指标（可手动填写或等待 OCR 提取）</view>
-    <view class="labs-grid">
-      <view class="field">
-        <view class="label">收缩压</view>
-        <input type="number" placeholder="mmHg" value="{{form.labs.systolic}}" data-path="form.labs.systolic" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">舒张压</view>
-        <input type="number" placeholder="mmHg" value="{{form.labs.diastolic}}" data-path="form.labs.diastolic" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">空腹血糖</view>
-        <input type="digit" placeholder="mmol/L" value="{{form.labs.fasting_glucose}}" data-path="form.labs.fasting_glucose" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">糖化血红蛋白</view>
-        <input type="digit" placeholder="%" value="{{form.labs.hba1c}}" data-path="form.labs.hba1c" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">总胆固醇</view>
-        <input type="digit" placeholder="mmol/L" value="{{form.labs.total_cholesterol}}" data-path="form.labs.total_cholesterol" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">HDL</view>
-        <input type="digit" placeholder="mmol/L" value="{{form.labs.hdl}}" data-path="form.labs.hdl" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">LDL</view>
-        <input type="digit" placeholder="mmol/L" value="{{form.labs.ldl}}" data-path="form.labs.ldl" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">甘油三酯</view>
-        <input type="digit" placeholder="mmol/L" value="{{form.labs.triglycerides}}" data-path="form.labs.triglycerides" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">尿酸</view>
-        <input type="number" placeholder="μmol/L" value="{{form.labs.uric_acid}}" data-path="form.labs.uric_acid" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">ALT</view>
-        <input type="number" placeholder="U/L" value="{{form.labs.alt}}" data-path="form.labs.alt" bindinput="onInputChange" />
-      </view>
-      <view class="field">
-        <view class="label">eGFR</view>
-        <input type="number" placeholder="ml/min" value="{{form.labs.egfr}}" data-path="form.labs.egfr" bindinput="onInputChange" />
-      </view>
-    </view>
-  </view>
 
   <view class="card">
     <view class="card-title">病史与生活方式</view>
@@ -133,7 +84,7 @@
   </view>
 
   <view class="card">
-    <view class="card-title">主要症状</view>
+    <view class="card-title">主要诉求</view>
     <view class="option-group">
       <view
         class="option-chip {{form.symptomsChecked && form.symptomsChecked[item.value] ? 'checked' : ''}}"
@@ -181,51 +132,17 @@
       <view class="banner-desc">{{analysisResult.summary || '系统已根据您的体检资料生成调理建议，请结合专业医师意见使用。'}}</view>
     </view>
 
-    <view class="pretty-section" wx:if="{{analysisResult.herbalPlan}}">
+    <view class="pretty-section" wx:if="{{analysisResult.topCustomHerbs && analysisResult.topCustomHerbs.length}}">
       <view class="section-header">
         <view class="section-icon">🌿</view>
-        <view class="section-title">个性化调理方案</view>
+        <view class="section-title">{{analysisResult.topSampleTitle || '样本药方'}}</view>
       </view>
       <view class="section-card">
-        <view class="plan-title">{{analysisResult.herbalPlan.name}}</view>
-        <view class="plan-subtitle" wx:if="{{analysisResult.herbalPlan.category}}">{{analysisResult.herbalPlan.category}}</view>
-
-        <view class="pill-grid" wx:if="{{analysisResult.herbalPlan.herbs.length}}">
-          <view class="pill" wx:for="{{analysisResult.herbalPlan.herbs}}" wx:key="name">
+        <view class="pill-grid">
+          <view class="pill" wx:for="{{analysisResult.topCustomHerbs}}" wx:key="name">
             <view class="pill-name">{{item.name}}</view>
             <view class="pill-dose">{{item.amount}}{{item.unit}}</view>
-          </view>
-        </view>
-
-        <view class="info-list">
-          <view class="info-row" wx:if="{{analysisResult.herbalPlan.dosage}}">
-            <view class="info-label">建议服法</view>
-            <view class="info-value">{{analysisResult.herbalPlan.dosage}}</view>
-          </view>
-          <view class="info-row" wx:if="{{analysisResult.herbalPlan.duration}}">
-            <view class="info-label">建议周期</view>
-            <view class="info-value">{{analysisResult.herbalPlan.duration}}</view>
-          </view>
-        </view>
-
-        <view class="bullet-section" wx:if="{{analysisResult.herbalPlan.adjustments.length}}">
-          <view class="bullet-title">调理贴士</view>
-          <view class="bullet-list">
-            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.adjustments}}" wx:key="*this">{{item}}</view>
-          </view>
-        </view>
-
-        <view class="bullet-section" wx:if="{{analysisResult.herbalPlan.precautions.length}}">
-          <view class="bullet-title">注意事项</view>
-          <view class="bullet-list">
-            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.precautions}}" wx:key="*this">{{item}}</view>
-          </view>
-        </view>
-
-        <view class="bullet-section danger" wx:if="{{analysisResult.herbalPlan.contraindications.length}}">
-          <view class="bullet-title">禁忌提醒</view>
-          <view class="bullet-list">
-            <view class="bullet-item" wx:for="{{analysisResult.herbalPlan.contraindications}}" wx:key="*this">{{item}}</view>
+            <view class="pill-effect" wx:if="{{item.effect}}">{{item.effect}}</view>
           </view>
         </view>
       </view>

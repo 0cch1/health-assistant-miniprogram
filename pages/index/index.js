@@ -5,19 +5,6 @@ const DEFAULT_FORM = {
     height: '',
     weight: ''
   },
-  labs: {
-    systolic: '',
-    diastolic: '',
-    fasting_glucose: '',
-    hba1c: '',
-    total_cholesterol: '',
-    hdl: '',
-    ldl: '',
-    triglycerides: '',
-    uric_acid: '',
-    alt: '',
-    egfr: ''
-  },
   history: [],
   lifestyle: {
     smoking: 'never',
@@ -39,14 +26,45 @@ const DEFAULT_FORM = {
 };
 
 const SYMPTOM_OPTIONS = [
-  { value: '肝阳上亢', label: '肝阳上亢（头晕、耳鸣、易怒）' },
-  { value: '阴虚燥热', label: '阴虚燥热（潮热盗汗、口干口燥）' },
-  { value: '痰湿内盛', label: '痰湿内盛（体重上升、困倦、口黏）' },
-  { value: '气血不足', label: '气血不足（乏力面白、心悸气短）' },
-  { value: '血瘀阻络', label: '血瘀阻络（胸闷胸痛、麻木刺痛）' },
-  { value: '湿热下注', label: '湿热下注（小便黄赤、关节红肿）' },
-  { value: '肾阴亏虚', label: '肾阴亏虚（腰膝酸软、头晕耳鸣）' },
-  { value: '肾阳不足', label: '肾阳不足（畏寒肢冷、夜尿频多）' }
+  { value: '降血压', label: '降血压（控制血压、预防心血管疾病）' },
+  { value: '调理肝功能', label: '调理肝功能（护肝养肝、改善肝功能）' },
+  { value: '辅助心脏健康', label: '辅助心脏健康（强心护心、改善心血管功能）' },
+  { value: '强健骨骼关节', label: '强健骨骼关节（补钙强骨、缓解关节疼痛）' },
+  { value: '缓解疲劳、提神', label: '缓解疲劳、提神（增强体力、改善精神状态）' },
+  { value: '增强记忆力', label: '增强记忆力（改善认知功能、提升专注力）' },
+  { value: '改善前列腺健康', label: '改善前列腺健康（男性健康、泌尿系统调理）' },
+  { value: '提高免疫力', label: '提高免疫力（增强抵抗力、预防疾病）' },
+  { value: '降血糖', label: '降血糖（控制血糖、预防糖尿病）' },
+  { value: '增肌健体', label: '增肌健体（增强肌肉、改善体质）' },
+  { value: '改善睡眠', label: '改善睡眠（安神助眠、提高睡眠质量）' },
+  { value: '防止骨质疏松', label: '防止骨质疏松（补钙强骨、预防骨折）' },
+  { value: '调理月经不调', label: '调理月经不调（女性健康、内分泌调理）' },
+  { value: '缓解焦虑', label: '缓解焦虑（舒缓情绪、改善心理状态）' },
+  { value: '减肥塑形', label: '减肥塑形（控制体重、改善体型）' },
+  { value: '调节内分泌', label: '调节内分泌（平衡激素、改善内分泌失调）' },
+  { value: '缓解更年期症状', label: '缓解更年期症状（女性更年期调理）' },
+  { value: '改善皮肤状态', label: '改善皮肤状态（美容养颜、改善肌肤）' },
+  { value: '美白养颜', label: '美白养颜（美容护肤、改善肤色）' },
+  { value: '缓解痛经', label: '缓解痛经（女性经期调理、缓解疼痛）' }
+];
+
+// Key-based symptom options for stable matching
+const SYMPTOM_OPTIONS_KEYS = [
+  { value: 'appeal_lower_bp', label: '降血压（控制血压、预防心血管疾病）' },
+  { value: 'appeal_liver', label: '调理肝功能（护肝养肝、改善肝功能）' },
+  { value: 'appeal_heart', label: '辅助心脏健康（强心护心、改善心血管功能）' },
+  { value: 'appeal_joint_bone', label: '强健骨骼关节（补肾强骨、缓解关节疼痛）' },
+  { value: 'appeal_anti_fatigue', label: '缓解疲劳、提神（增强体力、改善精神状态）' },
+  { value: 'appeal_memory', label: '增强记忆力（改善认知功能、提升专注力）' },
+  { value: 'appeal_prostate', label: '改善前列腺健康（男性健康、泌尿系统调理）' },
+  { value: 'appeal_immunity', label: '提高免疫力（增强抵抗力、预防疾病）' },
+  { value: 'appeal_lower_glucose', label: '降血糖（控制血糖、预防糖尿病）' },
+  { value: 'appeal_muscle', label: '增肌健体（增强肌肉、改善体质）' },
+  { value: 'appeal_sleep', label: '改善睡眠（安神助眠、提高睡眠质量）' },
+  { value: 'appeal_anti_osteoporosis', label: '防止骨质疏松（补钙强骨、预防骨折）' },
+  { value: 'appeal_menses', label: '调理月经不调（女性健康、内分泌调理）' },
+  { value: 'appeal_skin', label: '改善皮肤状态（美容养颜、改善肌肤）' },
+  { value: 'appeal_weight_loss', label: '减肥塑形（控制体重、改善体型）' }
 ];
 
 const HISTORY_OPTIONS = [
@@ -123,7 +141,7 @@ Page({
     ocrNotes: [],
     similarityText: '',
     form: JSON.parse(JSON.stringify(DEFAULT_FORM)),
-    symptomOptions: SYMPTOM_OPTIONS,
+    symptomOptions: SYMPTOM_OPTIONS_KEYS,
     historyOptions: HISTORY_OPTIONS,
     lifestyleGroups: LIFESTYLE_GROUPS,
     tcmDimensions: TCM_DIMENSIONS
@@ -310,7 +328,6 @@ Page({
         height: toNumber(form.demographics.height),
         weight: toNumber(form.demographics.weight)
       },
-      labs: mapObjectValues(form.labs, toNumber),
       history: form.history || [],
       lifestyle: form.lifestyle || {},
       symptoms: form.symptoms || [],
@@ -390,6 +407,37 @@ function normalizeAnalysisResult(raw) {
       });
     });
 
+  // derive nearest-neighbor sample herbs for direct display
+  const topMatch = matches[0] || null;
+  const topSample = topMatch && topMatch.sample ? topMatch.sample : null;
+  const topCustomHerbs = (topSample && topSample.herbal_plan && Array.isArray(topSample.herbal_plan.customHerbs))
+    ? topSample.herbal_plan.customHerbs
+    : [];
+  const topSampleTitle = (() => {
+    if (!topSample) return '';
+    const sym = Array.isArray(topSample.symptoms) && topSample.symptoms[0] ? topSample.symptoms[0] : '';
+    const dict = {
+      appeal_lower_bp: '降血压',
+      appeal_liver: '调理肝功能',
+      appeal_heart: '辅助心脏健康',
+      appeal_joint_bone: '强健骨骼关节',
+      appeal_anti_fatigue: '缓解疲劳、提神',
+      appeal_memory: '增强记忆力',
+      appeal_prostate: '改善前列腺健康',
+      appeal_immunity: '提高免疫力',
+      appeal_lower_glucose: '降血糖',
+      appeal_muscle: '增肌健体',
+      appeal_sleep: '改善睡眠',
+      appeal_anti_osteoporosis: '防止骨质疏松',
+      appeal_menses: '调理月经不调',
+      appeal_skin: '改善皮肤状态',
+      appeal_weight_loss: '减肥塑形',
+      appeal_general: '综合调理'
+    };
+    const label = dict[sym] || sym;
+    return label ? `样本药方 - ${label}` : `样本药方 - ${topSample.id || ''}`;
+  })();
+
   const herbalPlanSource = source.herbalPlan && typeof source.herbalPlan === 'object'
     ? source.herbalPlan
     : null;
@@ -435,6 +483,9 @@ function normalizeAnalysisResult(raw) {
     severityClass,
     matches,
     herbalPlan,
+    topMatch,
+    topCustomHerbs,
+    topSampleTitle,
     lifestyleAdvice,
     safety
   });
