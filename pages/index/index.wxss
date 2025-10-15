@@ -140,7 +140,7 @@ input:focus {
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  gap: 80rpx;
 }
 
 .radio-item {
