@@ -33,8 +33,9 @@ function analyzeUserProfile(userProfile, options = {}) {
   const similarity = best ? similarityScore(best.distance) : 0;
 
   const aggregated = aggregateMatchResults(matches);
-  const prescription = aggregated.prescription
-    ? buildPrescriptionPlan(aggregated.prescription, aggregated.sampleAdjustment)
+  // 优先使用yaofang样本的药方，不使用模拟生成的药方
+  const prescription = aggregated.customHerbs && aggregated.customHerbs.length > 0
+    ? buildCustomHerbsPlan(aggregated.customHerbs, aggregated.explanations)
     : null;
 
   const lifestyleAdvice = aggregated.lifestyleAdvice;
@@ -42,7 +43,6 @@ function analyzeUserProfile(userProfile, options = {}) {
 
   let safety = evaluateSafety({
     prescription,
-    labs: enrichedProfile.labs,
     history: enrichedProfile.history,
     lifestyle: enrichedProfile.lifestyle,
     similarity
@@ -86,13 +86,12 @@ function analyzeUserProfile(userProfile, options = {}) {
 }
 
 function enrichUserProfile(profile) {
-  const labs = profile.labs || {};
   const demographics = profile.demographics || {};
   const history = Array.isArray(profile.history) ? profile.history : [];
   const lifestyle = profile.lifestyle || {};
   const symptoms = Array.isArray(profile.symptoms) ? profile.symptoms : [];
 
-  let bmi = labs.bmi || profile.bmi;
+  let bmi = profile.bmi;
   if (!bmi && demographics.height && demographics.weight) {
     const h = parseFloat(demographics.height) / 100;
     const w = parseFloat(demographics.weight);
@@ -102,7 +101,7 @@ function enrichUserProfile(profile) {
   }
 
   return {
-    labs: Object.assign({}, labs || {}, { bmi }),
+    bmi: bmi,
     demographics,
     history,
     lifestyle,
@@ -142,22 +141,10 @@ function hybridDistance(userProfile, sample, options) {
 
 function buildNumericVector(entity) {
   const vector = [];
-  const labs = entity.labs || {};
   const demographics = entity.meta || entity.demographics || {};
 
   appendNormalized(vector, demographics.age, FEATURE_RANGES.age);
-  appendNormalized(vector, labs.bmi, FEATURE_RANGES.bmi);
-  appendNormalized(vector, labs.systolic, FEATURE_RANGES.systolic);
-  appendNormalized(vector, labs.diastolic, FEATURE_RANGES.diastolic);
-  appendNormalized(vector, labs.fasting_glucose, FEATURE_RANGES.fasting_glucose);
-  appendNormalized(vector, labs.hba1c, FEATURE_RANGES.hba1c);
-  appendNormalized(vector, labs.total_cholesterol, FEATURE_RANGES.total_cholesterol);
-  appendNormalized(vector, labs.hdl, FEATURE_RANGES.hdl, true);
-  appendNormalized(vector, labs.ldl, FEATURE_RANGES.ldl);
-  appendNormalized(vector, labs.triglycerides, FEATURE_RANGES.triglycerides);
-  appendNormalized(vector, labs.uric_acid, FEATURE_RANGES.uric_acid);
-  appendNormalized(vector, labs.alt, FEATURE_RANGES.alt);
-  appendNormalized(vector, labs.egfr, FEATURE_RANGES.egfr, true);
+  appendNormalized(vector, entity.bmi, FEATURE_RANGES.bmi);
 
   return vector;
 }
@@ -240,15 +227,22 @@ function aggregateMatchResults(matches) {
     severity: 0,
     lifestyle: new Set(),
     prescriptions: {},
-    adjustments: []
+    adjustments: [],
+    customHerbs: [],
+    explanations: []
   };
 
   matches.forEach(item => {
     const w = matchWeight(item.distance) / (weightSum || 1);
     const { sample } = item;
 
-    weighted.patterns[sample.tcm_pattern] = (weighted.patterns[sample.tcm_pattern] || 0) + w;
-    weighted.constitutions[sample.constitution] = (weighted.constitutions[sample.constitution] || 0) + w;
+    // 仅在样本存在有效取值时计入权重，避免出现字符串"null"
+    if (sample.tcm_pattern) {
+      weighted.patterns[sample.tcm_pattern] = (weighted.patterns[sample.tcm_pattern] || 0) + w;
+    }
+    if (sample.constitution) {
+      weighted.constitutions[sample.constitution] = (weighted.constitutions[sample.constitution] || 0) + w;
+    }
 
     collectLifestyleAdvice(weighted.lifestyle, sample.herbal_plan?.lifestyle);
 
@@ -259,10 +253,18 @@ function aggregateMatchResults(matches) {
     if (sample.herbal_plan?.adjustments) {
       weighted.adjustments.push({ weight: w, adjustments: sample.herbal_plan.adjustments });
     }
+    if (sample.herbal_plan?.customHerbs && sample.herbal_plan.customHerbs.length > 0) {
+      weighted.customHerbs.push({ weight: w, herbs: sample.herbal_plan.customHerbs });
+    }
+    if (sample.herbal_plan?.explanations && sample.herbal_plan.explanations.length > 0) {
+      weighted.explanations.push({ weight: w, explanations: sample.herbal_plan.explanations });
+    }
   });
 
-  const topPattern = topKey(weighted.patterns);
-  const topConstitution = topKey(weighted.constitutions);
+  // 归一化最高权重结果，过滤掉字符串"null"等无效值
+  const norm = (v) => (v && v !== 'null' && v !== 'undefined') ? v : null;
+  const topPattern = norm(topKey(weighted.patterns));
+  const topConstitution = norm(topKey(weighted.constitutions));
   const topPrescriptionId = topKey(weighted.prescriptions);
 
   return {
@@ -271,6 +273,8 @@ function aggregateMatchResults(matches) {
     severity: estimateSeverity(matches),
     prescription: topPrescriptionId,
     sampleAdjustment: weighted.adjustments,
+    customHerbs: weighted.customHerbs,
+    explanations: weighted.explanations,
     lifestyleAdvice: (function() {
       var result = [];
       weighted.lifestyle.forEach(function(item) {
@@ -323,6 +327,56 @@ function buildPrescriptionPlan(prescriptionId, adjustments) {
   };
 }
 
+function buildCustomHerbsPlan(customHerbsList, explanationsList) {
+  if (!customHerbsList || !customHerbsList.length) return null;
+
+  // 使用权重最高的样本的药方（最匹配的样本）
+  const bestEntry = customHerbsList.reduce((best, current) => {
+    if (!best) return current;
+    const bw = typeof best.weight === 'number' ? best.weight : 0;
+    const cw = typeof current.weight === 'number' ? current.weight : 0;
+    return cw > bw ? current : best;
+  }, null);
+
+  const herbs = (bestEntry.herbs || []).map(herb => ({
+    name: herb.name,
+    amount: herb.amount,
+    unit: herb.unit,
+    effect: herb.effect
+  }));
+
+  // 使用最佳匹配样本的说明
+  const bestExplanation = (Array.isArray(explanationsList) && explanationsList.length)
+    ? explanationsList.reduce((best, current) => {
+        if (!best) return current;
+        const bw = typeof best.weight === 'number' ? best.weight : 0;
+        const cw = typeof current.weight === 'number' ? current.weight : 0;
+        return cw > bw ? current : best;
+      }, null)
+    : null;
+
+  return {
+    id: 'yaofang_sample',
+    name: '个性化调理方案',
+    category: '基于相似案例推荐',
+    herbs: herbs,
+    dosage: '每日1剂，水煎400ml分早晚温服',
+    duration: '14天为一疗程，根据效果调整',
+    precautions: [
+      '请在专业医师指导下使用',
+      '如有不适请及时停用并咨询医师'
+    ],
+    contraindications: [
+      '孕妇及哺乳期妇女使用前请咨询医师',
+      '对中药材过敏者慎用'
+    ],
+    explanations: bestExplanation && Array.isArray(bestExplanation.explanations)
+      ? bestExplanation.explanations
+      : [],
+    adjustments: []
+  };
+}
+
 function mergeAdjustments(adjustmentsList) {
   if (!Array.isArray(adjustmentsList) || !adjustmentsList.length) return [];
   const aggregate = new Map();
@@ -352,39 +406,17 @@ function composeSummary(profile, matches, aggregated, similarity) {
     return '与样本库相似度较低，仅供参考。';
   })();
 
-  const keyLabs = extractKeyLabHighlights(profile.labs || {});
-
   return [
     `根据近邻样本综合判断，当前体质倾向于「${constitution}」，证候表现可归属「${pattern}」。`,
     severityText,
-    keyLabs.length ? `重点关注指标：${keyLabs.join('、')}。` : '',
     '请结合个体病史，由执业中医师辨证论治。'
   ].filter(Boolean).join('\n');
 }
 
-function extractKeyLabHighlights(labs) {
-  const alerts = [];
-  if (labs.systolic && labs.systolic >= 140) alerts.push(`收缩压${labs.systolic}mmHg`);
-  if (labs.fasting_glucose && labs.fasting_glucose >= 7) alerts.push(`空腹血糖${labs.fasting_glucose}mmol/L`);
-  if (labs.hba1c && labs.hba1c >= 6.5) alerts.push(`糖化${labs.hba1c}%`);
-  if (labs.total_cholesterol && labs.total_cholesterol >= 5.7) alerts.push(`总胆固醇${labs.total_cholesterol}mmol/L`);
-  if (labs.triglycerides && labs.triglycerides >= 2.3) alerts.push(`甘油三酯${labs.triglycerides}mmol/L`);
-  if (labs.uric_acid && labs.uric_acid >= 420) alerts.push(`尿酸${labs.uric_acid}μmol/L`);
-  if (labs.alt && labs.alt >= 60) alerts.push(`ALT ${labs.alt}U/L`);
-  if (labs.egfr && labs.egfr <= 60) alerts.push(`eGFR ${labs.egfr}ml/min`);
-  return alerts;
-}
 
-function evaluateSafety({ prescription, labs, history, lifestyle, similarity }) {
+function evaluateSafety({ prescription, history, lifestyle, similarity }) {
   const alerts = [];
   const mediumAlerts = [];
-
-  if (labs.alt && labs.alt > 120) {
-    alerts.push('ALT超过3倍上限（>120U/L），建议立即就医评估肝功能。');
-  }
-  if (labs.egfr && labs.egfr < 60) {
-    alerts.push('eGFR < 60 ml/min，存在肾功能不全风险，请在医师指导下用药。');
-  }
 
   const historySet = new Set(history || []);
   if (historySet.has('pregnancy') || historySet.has('pregnant')) {

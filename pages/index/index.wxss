@@ -555,6 +555,14 @@ slider {
   margin-top: 6rpx;
 }
 
+.pill-effect {
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-top: 8rpx;
+  line-height: 1.4;
+  font-style: italic;
+}
+
 .info-list {
   display: flex;
   flex-direction: column;
