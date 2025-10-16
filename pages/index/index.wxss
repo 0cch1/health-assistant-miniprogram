@@ -667,3 +667,100 @@ slider {
   color: #475569;
   line-height: 1.6;
 }
+
+/* 购买按钮样式 */
+.purchase-section {
+  margin-top: 40rpx;
+}
+
+.purchase-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 40rpx 32rpx;
+  box-shadow: 0 16rpx 40rpx rgba(102, 126, 234, 0.3);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.purchase-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  50% { transform: translateX(0%) translateY(0%) rotate(45deg); }
+}
+
+.purchase-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.purchase-icon {
+  font-size: 48rpx;
+  margin-right: 16rpx;
+}
+
+.purchase-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.2);
+}
+
+.purchase-desc {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 32rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.purchase-button {
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50rpx;
+  padding: 24rpx 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.purchase-button:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.purchase-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #667eea;
+  margin-right: 12rpx;
+}
+
+.purchase-arrow {
+  font-size: 36rpx;
+  color: #667eea;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.purchase-button:active .purchase-arrow {
+  transform: translateX(8rpx);
+}

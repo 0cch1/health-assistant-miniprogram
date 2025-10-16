@@ -186,5 +186,20 @@
         </view>
       </view>
     </view>
+
+    <!-- 购买按钮 -->
+    <view class="purchase-section" wx:if="{{analysisResult && analysisResult.topCustomHerbs && analysisResult.topCustomHerbs.length}}">
+      <view class="purchase-card">
+        <view class="purchase-header">
+          <view class="purchase-icon">🛒</view>
+          <view class="purchase-title">购买推荐中药</view>
+        </view>
+        <view class="purchase-desc">根据您的体质分析结果，为您推荐以下中药配方</view>
+        <button class="purchase-button" bindtap="goToPurchase">
+          <text class="purchase-text">立即购买</text>
+          <text class="purchase-arrow">→</text>
+        </button>
+      </view>
+    </view>
   </view>
 </scroll-view>

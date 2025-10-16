@@ -1,0 +1,106 @@
+<scroll-view class="page" scroll-y="true">
+  <view class="header">
+    <view class="title">中药购买页面</view>
+    <view class="subtitle">根据您的体质分析，为您推荐以下中药配方</view>
+  </view>
+
+  <!-- 推荐配方卡片 -->
+  <view class="prescription-card" wx:if="{{prescriptionData}}">
+    <view class="prescription-header">
+      <view class="prescription-icon">🌿</view>
+      <view class="prescription-title">{{prescriptionData.prescription}}</view>
+    </view>
+    
+    <view class="prescription-info">
+      <view class="info-item" wx:if="{{prescriptionData.constitution}}">
+        <text class="info-label">体质类型：</text>
+        <text class="info-value">{{prescriptionData.constitution}}</text>
+      </view>
+      <view class="info-item" wx:if="{{prescriptionData.pattern}}">
+        <text class="info-label">中医证型：</text>
+        <text class="info-value">{{prescriptionData.pattern}}</text>
+      </view>
+    </view>
+
+    <!-- 中药列表 -->
+    <view class="herbs-section">
+      <view class="section-title">推荐中药配方</view>
+      <view class="herbs-list">
+        <view class="herb-item" wx:for="{{prescriptionData.herbs}}" wx:key="name">
+          <view class="herb-info">
+            <view class="herb-name">{{item.name}}</view>
+            <view class="herb-dose">{{item.amount}}{{item.unit}}</view>
+            <view class="herb-effect" wx:if="{{item.effect}}">{{item.effect}}</view>
+          </view>
+          <view class="herb-price">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{item.price || '面议'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 安全提示 -->
+    <view class="safety-section" wx:if="{{prescriptionData.safety}}">
+      <view class="safety-header">
+        <view class="safety-icon">🛡️</view>
+        <view class="safety-title">安全提示</view>
+      </view>
+      <view class="safety-content">
+        <view class="safety-level safety-{{prescriptionData.safety.riskLevelClass || 'neutral'}}">
+          {{prescriptionData.safety.riskLevel || '请遵医嘱'}}
+        </view>
+        <view class="safety-desc">
+          {{prescriptionData.safety.isSafe ? '总体风险较低，请在医师指导下使用。' : '发现潜在风险，请先咨询执业中医师后再决定是否使用本方案。'}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 购买选项 -->
+  <view class="purchase-options">
+    <view class="option-card" bindtap="selectPurchaseMethod" data-method="online">
+      <view class="option-icon">🛒</view>
+      <view class="option-content">
+        <view class="option-title">在线购买</view>
+        <view class="option-desc">快递配送，方便快捷</view>
+      </view>
+      <view class="option-arrow">→</view>
+    </view>
+
+    <view class="option-card" bindtap="selectPurchaseMethod" data-method="store">
+      <view class="option-icon">🏪</view>
+      <view class="option-content">
+        <view class="option-title">到店购买</view>
+        <view class="option-desc">专业药师指导</view>
+      </view>
+      <view class="option-arrow">→</view>
+    </view>
+
+    <view class="option-card" bindtap="selectPurchaseMethod" data-method="consultation">
+      <view class="option-icon">👨‍⚕️</view>
+      <view class="option-content">
+        <view class="option-title">专家咨询</view>
+        <view class="option-desc">中医师在线问诊</view>
+      </view>
+      <view class="option-arrow">→</view>
+    </view>
+  </view>
+
+  <!-- 购买须知 -->
+  <view class="notice-section">
+    <view class="notice-title">购买须知</view>
+    <view class="notice-list">
+      <view class="notice-item">• 本推荐仅供参考，具体用药请咨询专业中医师</view>
+      <view class="notice-item">• 孕妇、哺乳期妇女、儿童请在医师指导下使用</view>
+      <view class="notice-item">• 如出现不良反应，请立即停药并就医</view>
+      <view class="notice-item">• 中药调理需要时间，请坚持按疗程服用</view>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-actions">
+    <button class="back-button" bindtap="goBack">返回分析</button>
+    <button class="contact-button" bindtap="contactService">联系客服</button>
+  </view>
+</scroll-view>

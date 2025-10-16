@@ -359,6 +359,50 @@ Page({
     });
     // 重新初始化勾选状态
     this.updateCheckedStates();
+  },
+
+  goToPurchase() {
+    // 获取当前分析结果中的推荐中药信息
+    const analysisResult = this.data.analysisResult;
+    if (!analysisResult || !analysisResult.topCustomHerbs) {
+      wx.showToast({ title: '暂无推荐中药', icon: 'none' });
+      return;
+    }
+
+    // 构建购买页面所需的参数
+    const purchaseData = {
+      prescription: analysisResult.topSampleTitle || '推荐中药配方',
+      herbs: analysisResult.topCustomHerbs || [],
+      constitution: analysisResult.constitution || '',
+      pattern: analysisResult.tcmPattern || '',
+      safety: analysisResult.safety || {}
+    };
+
+    // 将数据存储到本地，供购买页面使用
+    try {
+      wx.setStorageSync('purchaseData', purchaseData);
+      
+      // 跳转到购买页面（这里假设购买页面路径为 pages/purchase/purchase）
+      wx.navigateTo({
+        url: '/pages/purchase/purchase',
+        success: () => {
+          console.log('跳转到购买页面成功');
+        },
+        fail: (error) => {
+          console.error('跳转失败:', error);
+          // 如果购买页面不存在，显示提示信息
+          wx.showModal({
+            title: '功能开发中',
+            content: '购买功能正在开发中，请稍后再试。您可以将推荐的中药配方截图保存，到药店购买。',
+            showCancel: false,
+            confirmText: '我知道了'
+          });
+        }
+      });
+    } catch (error) {
+      console.error('存储购买数据失败:', error);
+      wx.showToast({ title: '操作失败，请重试', icon: 'none' });
+    }
   }
 });
 

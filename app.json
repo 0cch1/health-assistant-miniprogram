@@ -1,6 +1,7 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/purchase/purchase"
   ],
   "window": {
     "navigationBarTitleText": "智能中药配方推荐",
